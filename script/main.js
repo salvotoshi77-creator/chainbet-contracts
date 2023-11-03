@@ -25,6 +25,13 @@ const gameResult = async () => {
         home: res.data.response[0].scores.home.total,
         away: res.data.response[0].scores.away.total
     }
+    // const ret = {
+    //     id: 0,
+    //     finished: true,
+    //     home: 14,
+    //     away: 3
+    // }
+
     console.log(ret)
     let bits = 0;
     bits |= ret.finished
