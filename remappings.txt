@@ -1,3 +1,4 @@
 @prb/test/=lib/prb-test/src/
 forge-std/=lib/forge-std/src/
 @chainlink=lib/chainlink/
+@chainlink-ccip=node_modules/@chainlink/contracts-ccip/

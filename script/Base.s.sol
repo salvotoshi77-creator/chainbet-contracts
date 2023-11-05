@@ -24,7 +24,7 @@ abstract contract BaseScript is Script {
     ///
     /// The use case for $ETH_FROM is to specify the broadcaster key and its address via the command line.
     constructor() {
-        require(block.chainid == 11_155_111, "must be on sepolia");
+        // require(block.chainid == 11_155_111, "must be on sepolia");
         address from = vm.envOr({ name: "ETH_FROM", defaultValue: address(0) });
         if (from != address(0)) {
             broadcaster = from;

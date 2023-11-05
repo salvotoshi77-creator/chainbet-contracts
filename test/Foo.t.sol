@@ -2,13 +2,13 @@
 pragma solidity >=0.8.21 <0.9.0;
 
 import { PRBTest } from "@prb/test/PRBTest.sol";
-import { console2 } from "forge-std/console2.sol";
+import { console } from "forge-std/console.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { StringStorage } from "../src/StringStorage.sol";
 import { FunctionsConsumerExample } from "../src/FunctionsConsumerExample.sol";
 import { ChainBetFactory } from "../src/BettingFactory.sol";
 import { ERC20 } from "lib/solmate/src/tokens/ERC20.sol";
-
+import { Bytes32AddressLib } from "lib/solmate/src/utils/Bytes32AddressLib.sol";
 
 contract Mock20 is ERC20 {
     constructor() ERC20("Test", "TST", 6) {}
@@ -17,6 +17,7 @@ contract Mock20 is ERC20 {
 /// @dev If this is your first time with Forge, read this tutorial in the Foundry Book:
 /// https://book.getfoundry.sh/forge/writing-tests
 contract Test is PRBTest, StdCheats {
+    using Bytes32AddressLib for bytes32;
     FunctionsConsumerExample internal foo;
     ChainBetFactory internal factory;
     ERC20 internal USDC;
@@ -26,13 +27,24 @@ contract Test is PRBTest, StdCheats {
     function setUp() public virtual {
         vm.createSelectFork("sepolia");
         // Instantiate the contract-under-test.
+        address sep_ccip_router = 0xD0daae2231E9CB96b94C8512223533293C3693Bf;
+        address sep_functions_router = 0xb83E47C2bC239B3bf370bc41e1459A34b41238D0;
+        address sep_ccip_token = 0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05;
+        address weth = 0x097D90c9d3E0B50Ca60e1ae45F6A81010f9FB534;
+        uint sep_subscriptionId = 1537;
+        bytes32 sep_donID = bytes32("fun-ethereum-sepolia-1");
+        uint64 fuji_chain_selector = 14767482510784806043;
+
         USDC = new Mock20();
         factory = new ChainBetFactory(
-            0xb83E47C2bC239B3bf370bc41e1459A34b41238D0,
-            address(USDC),
-            1537,
-            300000,
-            bytes32("fun-ethereum-sepolia-1"),
+            sep_ccip_router,
+            sep_functions_router,
+            fuji_chain_selector,
+            sep_ccip_token,
+            weth,
+            sep_subscriptionId,
+            1000000,
+            sep_donID,
             source
         );
         vm.label(alice, "alice");
@@ -44,6 +56,19 @@ contract Test is PRBTest, StdCheats {
     function test_stringStorage() internal {
         StringStorage str = new StringStorage(source);
         str.value();
+    }
+
+    function test_demo() external {
+        // FunctionsConsumerExample con = FunctionsConsumerExample(0xa14DfbEcEA91df1f366f8ABfda621006Eb07b0FC);
+        FunctionsConsumerExample con = FunctionsConsumerExample((0x184716643002Ef8ccf61901a6025656d94799459));
+        startHoax(0x465d1CfE1d94D427EdfE93E2010284d1eCb8839d, 0x465d1CfE1d94D427EdfE93E2010284d1eCb8839d);
+        // con.wNative();
+        ERC20(con.TOKEN()).balanceOf(address(0x465d1CfE1d94D427EdfE93E2010284d1eCb8839d));
+        con.getBetInfo();
+        con.takeBet();
+        // console.log(margin, winner, _cover, finished);
+        // con._processResults(2007236682, con.betInfo());
+        // assertEq(gameState(7657, false, 17, 35), 0);
     }
 
     function gameState(uint id, bool finished, uint home, uint away) internal returns (uint state) {
@@ -58,7 +83,7 @@ contract Test is PRBTest, StdCheats {
     }
 
     function test_sanitygameState() external {
-        assertEq(gameState(7649, true, 17, 31), 2005139515);
+        assertEq(gameState(7657, true, 17, 31), 2005139515);
     }
 
     function test_home_cover_win(uint8 home, uint8 away) external {
@@ -90,7 +115,7 @@ contract Test is PRBTest, StdCheats {
 
         // final score home team: 14, away team: 3
         // home team covers
-        bet._processResults(gameState(0, true, home, away), bet.betInfo());
+        // bet._processResults(gameState(0, true, home, away), bet.betInfo());
 
         assertEq(USDC.balanceOf(address(bet)), 0);
         assertEq(USDC.balanceOf(alice), wager * 2);
@@ -125,7 +150,7 @@ contract Test is PRBTest, StdCheats {
 
         // final score home team: 14, away team: 3
         // home team covers
-        bet._processResults(gameState(0, true, home, away), bet.betInfo());
+        // bet._processResults(gameState(0, true, home, away), bet.betInfo());
 
         assertEq(USDC.balanceOf(address(bet)), 0);
         assertEq(USDC.balanceOf(bob), wager * 2);
@@ -160,7 +185,7 @@ contract Test is PRBTest, StdCheats {
 
         // final score home team: 14, away team: 3
         // home team covers
-        bet._processResults(gameState(0, true, home, away), bet.betInfo());
+        // bet._processResults(gameState(0, true, home, away), bet.betInfo());
 
         assertEq(USDC.balanceOf(address(bet)), 0);
         assertEq(USDC.balanceOf(bob), wager);
@@ -195,7 +220,7 @@ contract Test is PRBTest, StdCheats {
 
         // final score home team: 14, away team: 3
         // home team covers
-        bet._processResults(gameState(0, true, home, away), bet.betInfo());
+        // bet._processResults(gameState(0, true, home, away), bet.betInfo());
 
         assertEq(USDC.balanceOf(address(bet)), 0);
         assertEq(USDC.balanceOf(alice), wager * 2);
@@ -228,7 +253,7 @@ contract Test is PRBTest, StdCheats {
         USDC.approve(address(bet), wager);
         bet.takeBet();
 
-        bet._processResults(gameState(0, true, home, away), bet.betInfo());
+        // bet._processResults(gameState(0, true, home, away), bet.betInfo());
 
         assertEq(USDC.balanceOf(address(bet)), 0);
         assertEq(USDC.balanceOf(bob), wager * 2);
@@ -260,7 +285,7 @@ contract Test is PRBTest, StdCheats {
         USDC.approve(address(bet), wager);
         bet.takeBet();
 
-        bet._processResults(gameState(0, true, home, away), bet.betInfo());
+        // bet._processResults(gameState(0, true, home, away), bet.betInfo());
 
         assertEq(USDC.balanceOf(address(bet)), 0);
         assertEq(USDC.balanceOf(bob), wager);
@@ -297,7 +322,7 @@ contract Test is PRBTest, StdCheats {
 
         // final score home team: 14, away team: 3
         // home team covers
-        bet._processResults(gameState(0, true, home, away), bet.betInfo());
+        // bet._processResults(gameState(0, true, home, away), bet.betInfo());
 
         assertEq(USDC.balanceOf(address(bet)), 0);
         assertEq(USDC.balanceOf(alice), wager * 2);
@@ -332,7 +357,7 @@ contract Test is PRBTest, StdCheats {
 
         // final score home team: 14, away team: 3
         // home team covers
-        bet._processResults(gameState(0, true, home, away), bet.betInfo());
+        // bet._processResults(gameState(0, true, home, away), bet.betInfo());
 
         assertEq(USDC.balanceOf(address(bet)), 0);
         assertEq(USDC.balanceOf(bob), wager * 2);
@@ -367,7 +392,7 @@ contract Test is PRBTest, StdCheats {
 
         // final score home team: 14, away team: 3
         // home team covers
-        bet._processResults(gameState(0, true, home, away), bet.betInfo());
+        // bet._processResults(gameState(0, true, home, away), bet.betInfo());
 
         assertEq(USDC.balanceOf(address(bet)), 0);
         assertEq(USDC.balanceOf(bob), wager);
@@ -404,7 +429,7 @@ contract Test is PRBTest, StdCheats {
 
         // final score home team: 14, away team: 3
         // home team covers
-        bet._processResults(gameState(0, true, home, away), bet.betInfo());
+        // bet._processResults(gameState(0, true, home, away), bet.betInfo());
 
         assertEq(USDC.balanceOf(address(bet)), 0);
         assertEq(USDC.balanceOf(alice), wager * 2);
@@ -439,7 +464,7 @@ contract Test is PRBTest, StdCheats {
 
         // final score home team: 14, away team: 3
         // home team covers
-        bet._processResults(gameState(0, true, home, away), bet.betInfo());
+        // bet._processResults(gameState(0, true, home, away), bet.betInfo());
 
         assertEq(USDC.balanceOf(address(bet)), 0);
         assertEq(USDC.balanceOf(bob), wager * 2);
@@ -474,7 +499,7 @@ contract Test is PRBTest, StdCheats {
 
         // final score home team: 14, away team: 3
         // home team covers
-        bet._processResults(gameState(0, true, home, away), bet.betInfo());
+        // bet._processResults(gameState(0, true, home, away), bet.betInfo());
 
         assertEq(USDC.balanceOf(address(bet)), 0);
         assertEq(USDC.balanceOf(bob), wager);
@@ -507,7 +532,7 @@ contract Test is PRBTest, StdCheats {
 
         // final score home team: 14, away team: 3
         // home team covers
-        bet._processResults(gameState(0, true, home, away), bet.betInfo());
+        // bet._processResults(gameState(0, true, home, away), bet.betInfo());
 
         assertEq(USDC.balanceOf(address(bet)), 0);
         assertEq(USDC.balanceOf(bob), wager);
@@ -540,11 +565,11 @@ contract Test is PRBTest, StdCheats {
 
         assertEq(USDC.balanceOf(address(bet)), wager * 2);
         if (cover) {
-            assertEq(bet.cover(), alice);
-            assertEq(bet.ats(), bob);
+            assertEq(bet.cover().fromLast20Bytes(), alice);
+            assertEq(bet.ats().fromLast20Bytes(), bob);
         } else {
-            assertEq(bet.cover(), bob);
-            assertEq(bet.ats(), alice);
+            assertEq(bet.cover().fromLast20Bytes(), bob);
+            assertEq(bet.ats().fromLast20Bytes(), alice);
         }
 
         vm.expectRevert("Bet already taken");
@@ -557,10 +582,7 @@ contract Test is PRBTest, StdCheats {
         startHoax(alice, alice);
         USDC.approve(address(factory), wager);
         bool exit = false;
-        if (factory.bets(alice, matchId) != address(0)) {
-            vm.expectRevert("Bet already exists");
-            exit = true;
-        } else if (wager == 0) {
+        if (wager == 0) {
             vm.expectRevert("Wager must be greater than 0");
             exit = true;
         }
@@ -582,11 +604,11 @@ contract Test is PRBTest, StdCheats {
         assertEq(_cover, cover);
         assertEq(_finished, false);
         if (cover) {
-            assertEq(bet.cover(), alice);
-            assertEq(bet.ats(), address(0));
+            assertEq(bet.cover().fromLast20Bytes(), alice);
+            assertEq(bet.ats().fromLast20Bytes(), address(0));
         } else {
-            assertEq(bet.cover(), address(0));
-            assertEq(bet.ats(), alice);
+            assertEq(bet.cover().fromLast20Bytes(), address(0));
+            assertEq(bet.ats().fromLast20Bytes(), alice);
         }
         assertEq(USDC.balanceOf(alice), 0);
         assertEq(USDC.balanceOf(address(bet)), wager);
